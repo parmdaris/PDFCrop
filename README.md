@@ -1,4 +1,4 @@
-SYSTEM INTENDED FOR USE ON THE ONLINE MARKETPLACE MERCADO LIVRE IN BRAZIL, THEREFORE ALL DESCRIPTIONS AND INSTRUCTIONS ARE GOING TO BE IN BRAZILLIAN PORTUGUESE.
+SYSTEM INTENDED FOR USE ON THE ONLINE MARKETPLACE MERCADO LIVRE IN BRAZIL, THEREFORE ALL DESCRIPTIONS AND INSTRUCTIONS ARE GOING TO BE IN BRAZILIAN PORTUGUESE.
 
 Script para automatizar o tratamento de etiquetas de envio de produtos do Mercado Livre, reduzindo o arquivo PDF da venda a apenas a etiqueta em si e realizando a redução do tamanho da página para apenas a área da etiqueta, facilitando a impressão em diversos tipos de mídia, principalmente em papel de adesivos.
 
