@@ -4,9 +4,9 @@ import os
 import datetime
 import shutil
 
-counter = 0
+contador = 0
 last_filepath = None  # Variável para guardar o último nome processado
-
+listaCr = []
 nova_etiqueta = mupdf.open()
 nova_declaracao = mupdf.open()
 
@@ -33,10 +33,10 @@ def separarDeclaracao():
     pag_alvo = 1
     nova_declaracao.insert_pdf(original, from_page=pag_alvo, to_page=pag_alvo)
 
-def getNomeDestino(original):
-    texto = original[2].get_text()
-    linha = texto.split("\n")
-    return linha[5]
+def getDadosDestino(original):
+    dados = original[2].get_text()
+    linha = dados.split("\n")
+    return linha[5], linha[2]
 
 for filepath in sys.argv[1:]:
     last_filepath = filepath
@@ -47,24 +47,36 @@ for filepath in sys.argv[1:]:
     croparEtiqueta(coord_etiqueta)
     separarDeclaracao()
 
-    destino = getNomeDestino(original)
+    dados = getDadosDestino(original)
+
+    destino = dados[0]
+    codRastreio = dados[1]
+
+    listaCr.append(codRastreio[-6:]) # Armazena os finais dos códigos de rastreio para nomear os arquivos múltiplos
     
     original.close()
-    shutil.move(os.path.abspath(filepath), "Originais") # Mover originais para a pasta Originais
-    counter += 1
 
+    os.rename(os.path.abspath(filepath), f"{destino}_{codRastreio}.pdf")
 
-if counter == 0:
+    if os.path.exists(f"Originais/{destino}_{codRastreio}.pdf"):
+        os.remove(f"Originais/{destino}_{codRastreio}.pdf")
+
+    shutil.move(f"{destino}_{codRastreio}.pdf", "Originais") # Mover originais para a pasta Originais
+    contador += 1
+
+finaisCr = "_".join(listaCr)
+
+if contador == 0:
     raise ValueError("Nenhum arquivo foi processado.")
 
-if counter > 1:
+if contador > 1:
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    arq_etiqueta = f"CROP_MULTIPLE_{timestamp}.pdf"
-    arq_declaracao = f"DC_MULTIPLE_{timestamp}.pdf"
+    arq_etiqueta = f"CROP_MULTIPLE_{finaisCr}.pdf"
+    arq_declaracao = f"DC_MULTIPLE_{finaisCr}.pdf"
 else:
     
-    arq_etiqueta = f"ETIQ_{destino}.pdf"
-    arq_declaracao = f"DC_{destino}.pdf"
+    arq_etiqueta = f"ETIQ_{destino}_{codRastreio}.pdf"
+    arq_declaracao = f"DC_{destino}_{codRastreio}.pdf"
 
 etiqueta_path = os.path.join("Etiquetas", arq_etiqueta)
 declaracao_path = os.path.join("Declarações", arq_declaracao)
