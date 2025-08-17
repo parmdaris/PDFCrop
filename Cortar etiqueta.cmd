@@ -1,7 +1,7 @@
 @echo off
 setlocal enabledelayedexpansion
 
-set SCRIPT="C:\PDFCrop\pdfcrop.exe"
+set SCRIPT="CAMINHO PARA O SCRIPT PYTHON"
 
 set ARGS=
 

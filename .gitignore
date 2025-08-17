@@ -3,6 +3,9 @@ bin-debug/
 bin-release/
 [Oo]bj/
 [Bb]in/
+Etiquetas/
+Originais/
+Declarações/
 
 # Other files and folders
 .settings/
@@ -13,6 +16,7 @@ bin-release/
 *.ipa
 *.apk
 *.exe
+*.pdf
 
 # Project files, i.e. `.project`, `.actionScriptProperties` and `.flexProperties`
 # should NOT be excluded as they contain compiler settings and other important
