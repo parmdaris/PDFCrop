@@ -10,9 +10,25 @@ listaCr = []
 nova_etiqueta = mupdf.open()
 nova_declaracao = mupdf.open()
 
-os.makedirs("Etiquetas", exist_ok=True)
-os.makedirs("Declarações", exist_ok=True)
-os.makedirs("Originais", exist_ok=True)
+timestamp = datetime.datetime.now().strftime("%Y%m%d")
+data = []
+dia = data.append(timestamp[6:])
+mes = data.append(timestamp[4:-2])
+ano = data.append(timestamp[:-4])
+data_string = "-".join(data)
+
+home_usuario = os.path.expanduser("~")
+raiz_arquivos = f"{home_usuario}/Documents/Vendas MELI/"
+dia_atual = f"{raiz_arquivos}/{data_string}"
+
+pasta_etiquetas = f"{dia_atual}/Etiquetas"
+pasta_declaracoes = f"{dia_atual}/Declarações"
+pasta_originais = f"{dia_atual}/Originais"
+
+os.makedirs(dia_atual, exist_ok=True)
+os.makedirs(pasta_etiquetas, exist_ok=True)
+os.makedirs(pasta_declaracoes, exist_ok=True)
+os.makedirs(pasta_originais, exist_ok=True)
 
 def croparEtiqueta(coordenadas):
     pag_alvo = 0
@@ -38,6 +54,43 @@ def getDadosDestino(original):
     linha = dados.split("\n")
     return linha[5], linha[2]
 
+def alterarOriginal(filepath, destino, codRastreio):
+    os.rename(os.path.abspath(filepath), f"{destino}_{codRastreio}.pdf")
+
+    if os.path.exists(f"{pasta_originais}/{destino}_{codRastreio}.pdf"):
+        os.remove(f"{pasta_originais}/{destino}_{codRastreio}.pdf")
+
+    shutil.move(f"{destino}_{codRastreio}.pdf", pasta_originais) # Mover originais para a pasta Originais
+
+
+def abrirArquivos(etiqueta_path, declaracao_path):
+    os.startfile(etiqueta_path)
+    os.startfile(declaracao_path)
+
+
+def gerarTagsDC(destino, codRastreio, finaisCr):
+    if contador == 0:
+        raise ValueError("Nenhum arquivo foi processado.")
+
+    if contador > 1:
+        arq_etiqueta = f"CROP_MULTIPLE_{finaisCr}.pdf"
+        arq_declaracao = f"DC_MULTIPLE_{finaisCr}.pdf"
+    else:
+        arq_etiqueta = f"ETIQ_{destino}_{codRastreio}.pdf"
+        arq_declaracao = f"DC_{destino}_{codRastreio}.pdf"
+
+    etiqueta_path = os.path.join(pasta_etiquetas, arq_etiqueta)
+    declaracao_path = os.path.join(pasta_declaracoes, arq_declaracao)
+
+    nova_etiqueta.save(etiqueta_path)
+    nova_declaracao.save(declaracao_path)
+
+    nova_etiqueta.close()
+    nova_declaracao.close()
+
+    abrirArquivos(etiqueta_path, declaracao_path)
+
+
 for filepath in sys.argv[1:]:
     last_filepath = filepath
 
@@ -56,36 +109,11 @@ for filepath in sys.argv[1:]:
     
     original.close()
 
-    os.rename(os.path.abspath(filepath), f"{destino}_{codRastreio}.pdf")
-
-    if os.path.exists(f"Originais/{destino}_{codRastreio}.pdf"):
-        os.remove(f"Originais/{destino}_{codRastreio}.pdf")
-
-    shutil.move(f"{destino}_{codRastreio}.pdf", "Originais") # Mover originais para a pasta Originais
+    alterarOriginal(filepath, destino, codRastreio)
+    
     contador += 1
 
 finaisCr = "_".join(listaCr)
 
-if contador == 0:
-    raise ValueError("Nenhum arquivo foi processado.")
+gerarTagsDC(destino, codRastreio, finaisCr)
 
-if contador > 1:
-    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    arq_etiqueta = f"CROP_MULTIPLE_{finaisCr}.pdf"
-    arq_declaracao = f"DC_MULTIPLE_{finaisCr}.pdf"
-else:
-    
-    arq_etiqueta = f"ETIQ_{destino}_{codRastreio}.pdf"
-    arq_declaracao = f"DC_{destino}_{codRastreio}.pdf"
-
-etiqueta_path = os.path.join("Etiquetas", arq_etiqueta)
-declaracao_path = os.path.join("Declarações", arq_declaracao)
-
-nova_etiqueta.save(etiqueta_path)
-nova_declaracao.save(declaracao_path)
-
-nova_etiqueta.close()
-nova_declaracao.close()
-
-os.startfile(etiqueta_path)
-os.startfile(declaracao_path)
