@@ -33,6 +33,11 @@ def separarDeclaracao():
     pag_alvo = 1
     nova_declaracao.insert_pdf(original, from_page=pag_alvo, to_page=pag_alvo)
 
+def getNomeDestino(original):
+    texto = original[2].get_text()
+    linha = texto.split("\n")
+    return linha[5]
+
 for filepath in sys.argv[1:]:
     last_filepath = filepath
 
@@ -42,6 +47,8 @@ for filepath in sys.argv[1:]:
     croparEtiqueta(coord_etiqueta)
     separarDeclaracao()
 
+    destino = getNomeDestino(original)
+    
     original.close()
     shutil.move(os.path.abspath(filepath), "Originais") # Mover originais para a pasta Originais
     counter += 1
@@ -55,8 +62,9 @@ if counter > 1:
     arq_etiqueta = f"CROP_MULTIPLE_{timestamp}.pdf"
     arq_declaracao = f"DC_MULTIPLE_{timestamp}.pdf"
 else:
-    arq_etiqueta = f"CROP_{os.path.basename(last_filepath)}"
-    arq_declaracao = f"DC_{os.path.basename(last_filepath)}.pdf"
+    
+    arq_etiqueta = f"ETIQ_{destino}.pdf"
+    arq_declaracao = f"DC_{destino}.pdf"
 
 etiqueta_path = os.path.join("Etiquetas", arq_etiqueta)
 declaracao_path = os.path.join("Declarações", arq_declaracao)
