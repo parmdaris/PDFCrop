@@ -5,21 +5,20 @@ import datetime
 import shutil
 
 contador = 0
-last_filepath = None  # Variável para guardar o último nome processado
 listaCr = []
+data = []
 nova_etiqueta = mupdf.open()
 nova_declaracao = mupdf.open()
 
 timestamp = datetime.datetime.now().strftime("%Y%m%d")
-data = []
-dia = data.append(timestamp[6:])
-mes = data.append(timestamp[4:-2])
-ano = data.append(timestamp[:-4])
-data_string = "-".join(data)
+data.append(timestamp[6:]) #Dia atual
+data.append(timestamp[4:-2]) #Mês atual
+data.append(timestamp[:-4]) #Ano atual
+data_string = "-".join(data) #Criar string "dia-mes-ano"
 
 home_usuario = os.path.expanduser("~")
-raiz_arquivos = f"{home_usuario}/Documents/Vendas MELI/"
-dia_atual = f"{raiz_arquivos}/{data_string}"
+raiz_meli = f"{home_usuario}/Documents/Vendas MELI/"
+dia_atual = f"{raiz_meli}/{data_string}"
 
 pasta_etiquetas = f"{dia_atual}/Etiquetas"
 pasta_declaracoes = f"{dia_atual}/Declarações"
@@ -92,15 +91,20 @@ def gerarTagsDC(destino, codRastreio, finaisCr):
 
 
 for filepath in sys.argv[1:]:
-    last_filepath = filepath
 
     original = mupdf.open(os.path.abspath(filepath))
+    qtd_pgs = original.page_count
 
-    coord_etiqueta = [31.7, 28.7, 286.3, 449.3]
-    croparEtiqueta(coord_etiqueta)
+    coord_etiqueta_meli = [31.7, 28.7, 286.3, 449.3]
+    coord_etiqueta_menvio = []
+
+    if qtd_pgs < 3:
+        croparEtiqueta(coord_etiqueta_menvio) # Melhorar tratamento do PDF do melhor envio. *****************************
+
+    croparEtiqueta(coord_etiqueta_meli)
     separarDeclaracao()
 
-    dados = getDadosDestino(original)
+    dados = getDadosDestino(original) # Pode quebrar com uma etiqueta do melhor envio ************************************
 
     destino = dados[0]
     codRastreio = dados[1]
@@ -117,3 +121,4 @@ finaisCr = "_".join(listaCr)
 
 gerarTagsDC(destino, codRastreio, finaisCr)
 
+# Uma forma de diferenciar um PDF do MeLi de um do Melhor envio é a ausência de outras páginas no PDF. Pode ser utilizada como condição para uma rotina de averiguação do tipo de arquivo.
