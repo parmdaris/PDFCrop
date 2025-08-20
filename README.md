@@ -15,6 +15,12 @@ Como utilizar:
 
 - Mova o arquivo CMD deste repositório para a pasta "shell:sendto" para incluir o script em "Enviar para..." no menu de contexto do sistema;
 
-- Selecione os arquivos a serem tratados, clique com o mouse direito e envie para o script. Os originais serão movidos para a pasta "Vendas MELI" no diretório "Documentos" e os arquivos de etiqueta e declaração de conteúdo serão abertos automaticamente.
+- Baixe os arquivos de etiqueta das vendas a serem preparadas;
+
+- Selecione os arquivos, clique com o mouse direito e envie para o script. Os originais serão movidos para a pasta "Vendas MELI" no diretório "Documentos" e os arquivos de etiqueta e declaração de conteúdo serão abertos automaticamente.
 
 * Outra maneira de executar o processo é arrastar os arquivos para o script, que realizará a mesma funcionalidade.
+
+A realizar:
+
+* Adaptação para realizar o preparo de etiquetas do sistema Melhor Envio.
