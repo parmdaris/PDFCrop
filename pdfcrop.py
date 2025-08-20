@@ -5,32 +5,31 @@ import datetime
 import shutil
 
 contador = 0
+contador_timestamp = 0 # DEBUG
 listaCr = []
-data = []
 nova_etiqueta = mupdf.open()
 nova_declaracao = mupdf.open()
 
 coord_etiqueta_meli = [31.7, 28.7, 286.3, 449.3]
 coord_etiqueta_menvio = []
 
-timestamp = datetime.datetime.now().strftime("%Y%m%d")
-data.append(timestamp[6:]) #Dia atual
-data.append(timestamp[4:-2]) #Mês atual
-data.append(timestamp[:-4]) #Ano atual
-data_string = "-".join(data) #Criar string "dia-mes-ano"
+def prepararDiretorios():
+    data_atual = getTimestamp()
 
-home_usuario = os.path.expanduser("~")
-raiz_meli = f"{home_usuario}/Documents/Vendas MELI/"
-dia_atual = f"{raiz_meli}/{data_string}"
+    home_usuario = os.path.expanduser("~")
+    raiz_meli = f"{home_usuario}/Documents/Vendas MELI/"
+    dia_atual = f"{raiz_meli}/{data_atual}"
 
-pasta_etiquetas = f"{dia_atual}/Etiquetas"
-pasta_declaracoes = f"{dia_atual}/Declarações"
-pasta_originais = f"{dia_atual}/Originais"
+    pasta_etiquetas = f"{dia_atual}/Etiquetas"
+    pasta_declaracoes = f"{dia_atual}/Declarações"
+    pasta_originais = f"{dia_atual}/Originais"
 
-os.makedirs(dia_atual, exist_ok=True)
-os.makedirs(pasta_etiquetas, exist_ok=True)
-os.makedirs(pasta_declaracoes, exist_ok=True)
-os.makedirs(pasta_originais, exist_ok=True)
+    os.makedirs(dia_atual, exist_ok=True)
+    os.makedirs(pasta_etiquetas, exist_ok=True)
+    os.makedirs(pasta_declaracoes, exist_ok=True)
+    os.makedirs(pasta_originais, exist_ok=True)
+
+    return pasta_etiquetas, pasta_declaracoes, pasta_originais
 
 def croparEtiqueta(coordenadas):
     pag_alvo = 0
@@ -61,6 +60,8 @@ def getDadosDestino(original):
     return nome_destinatario, codigo_rastreio
 
 def alterarOriginal(filepath, destino, codRastreio):
+    pasta_originais = prepararDiretorios()[2]
+
     os.rename(os.path.abspath(filepath), f"{destino}_{codRastreio}.pdf")
 
     if os.path.exists(f"{pasta_originais}/{destino}_{codRastreio}.pdf"):
@@ -86,6 +87,9 @@ def gerarTagsDC(destino, codRastreio, listaCr):
         arq_etiqueta = f"ETIQ_{destino}_{codRastreio}.pdf"
         arq_declaracao = f"DC_{destino}_{codRastreio}.pdf"
 
+    pasta_etiquetas = prepararDiretorios()[0]
+    pasta_declaracoes = prepararDiretorios()[1]
+
     etiqueta_path = os.path.join(pasta_etiquetas, arq_etiqueta)
     declaracao_path = os.path.join(pasta_declaracoes, arq_declaracao)
 
@@ -98,30 +102,41 @@ def gerarTagsDC(destino, codRastreio, listaCr):
     abrirArquivos(etiqueta_path, declaracao_path)
 
 
-for filepath in sys.argv[1:]:
+def getTimestamp():
+    data = []
+    timestamp = datetime.datetime.now().strftime("%Y%m%d")
+    data.append(timestamp[6:]) #Dia atual
+    data.append(timestamp[4:-2]) #Mês atual
+    data.append(timestamp[:-4]) #Ano atual
+    data_string = "-".join(data) #Criar string "dia-mes-ano"
+    #print(data_string) ######################################################### Investigar múltiplas chamadas da função
+    return data_string
 
-    original = mupdf.open(os.path.abspath(filepath))
-    qtd_pgs = original.page_count
-    
-    if qtd_pgs < 3:
-        coordenadas = coord_etiqueta_menvio # Melhorar tratamento do PDF do melhor envio. *****************************
-    else:
-        coordenadas = coord_etiqueta_meli
+if __name__ == '__main__':
 
-    dados = getDadosDestino(original) # Pode quebrar com uma etiqueta do melhor envio ************************************
-    destino = dados[0]
-    codRastreio = dados[1]
+    prepararDiretorios()
 
-    listaCr.append(codRastreio[-6:]) # Armazena os finais dos códigos de rastreio para nomear os arquivos múltiplos
+    for filepath in sys.argv[1:]:
 
-    croparEtiqueta(coordenadas)
-    separarDeclaracao()
-    original.close()
+        original = mupdf.open(os.path.abspath(filepath))
+        qtd_pgs = original.page_count
+        dados = getDadosDestino(original) # Pode quebrar com uma etiqueta do melhor envio ************************************
+        destino = dados[0]
+        codRastreio = dados[1]
 
-    alterarOriginal(filepath, destino, codRastreio)
-    contador += 1
+        listaCr.append(codRastreio[-6:]) # Armazena os finais dos códigos de rastreio para nomear os arquivos múltiplos
+
+        if qtd_pgs < 3:
+            coordenadas = coord_etiqueta_menvio # Melhorar tratamento do PDF do melhor envio. *****************************
+        else:
+            coordenadas = coord_etiqueta_meli
+        croparEtiqueta(coordenadas)
+        separarDeclaracao()
+        original.close()
+        alterarOriginal(filepath, destino, codRastreio)
+        contador += 1
 
 
-gerarTagsDC(destino, codRastreio, listaCr)
+    gerarTagsDC(destino, codRastreio, listaCr)
 
-# Uma forma de diferenciar um PDF do MeLi de um do Melhor envio é a ausência de outras páginas no PDF. Pode ser utilizada como condição para uma rotina de averiguação do tipo de arquivo.
+    # Uma forma de diferenciar um PDF do MeLi de um do Melhor envio é a ausência de outras páginas no PDF. Pode ser utilizada como condição para uma rotina de averiguação do tipo de arquivo.
