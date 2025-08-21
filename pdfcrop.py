@@ -3,15 +3,14 @@ import sys
 import os
 import datetime
 import shutil
+import numpy as np
 
-contador = 0
-contador_timestamp = 0 # DEBUG
-listaCr = []
+listaCr = [] # Armazena os finais dos códigos de rastreio para nomear os arquivos múltiplos
 nova_etiqueta = mupdf.open()
 nova_declaracao = mupdf.open()
 
 coord_etiqueta_meli = [31.7, 28.7, 286.3, 449.3]
-coord_etiqueta_menvio = []
+coord_etiqueta_menvio = [13, 24, 284, 400]
 
 def prepararDiretorios():
     data_atual = getTimestamp()
@@ -31,6 +30,25 @@ def prepararDiretorios():
 
     return pasta_etiquetas, pasta_declaracoes, pasta_originais
 
+
+def calcular_margem(coord_bruta, escala):
+    
+    x0, y0, x1, y1 = coord_bruta
+
+    largura = x1 - x0
+    altura = y1 - y0
+
+    larg_extra = (largura * (1 - escala)) / 2
+    alt_extra = (altura * (1 - escala)) / 2
+
+    novo_x0 = x0 - larg_extra
+    novo_y0 = y0 - alt_extra
+    novo_x1 = x1 + larg_extra
+    novo_y1 = y1 + alt_extra
+
+    return [novo_x0, novo_y0, novo_x1, novo_y1]
+
+
 def croparEtiqueta(coordenadas):
     pag_alvo = 0
 
@@ -41,16 +59,22 @@ def croparEtiqueta(coordenadas):
     linha_margem.draw_rect(crop_etiqueta)
     linha_margem.finish(width=0.5, color=(0, 0, 0))
     linha_margem.commit()
+    
+    coord_margem = calcular_margem(coordenadas, 0.95)
 
-    margem = mupdf.Rect(25, 17.632, 293, 460.368)
+    margem = mupdf.Rect(coord_margem[0], coord_margem[1], coord_margem[2], coord_margem[3])
+
     pag_etiqueta.set_cropbox(margem) #Faz o tamanho da página que receberá o corte ser 5% maior que o recorte, criando uma margem.
     nova_etiqueta.insert_pdf(original, from_page=pag_alvo, to_page=pag_alvo)
+
 
 def separarDeclaracao():
     pag_alvo = 1
     nova_declaracao.insert_pdf(original, from_page=pag_alvo, to_page=pag_alvo)
 
-def getDadosDestino(original):
+
+def getDadosMeLi(original):
+
     dados = original[1].get_text()
     
     linha = dados.split("\n")
@@ -58,6 +82,18 @@ def getDadosDestino(original):
     codigo_rastreio = linha[1][-13:]
 
     return nome_destinatario, codigo_rastreio
+
+
+def getDadosMenvio(original):
+    
+    dados = original[0].get_text()
+    
+    linha = dados.split("\n")
+    nome_destinatario = linha[11]
+    codigo_rastreio = linha[6]
+
+    return nome_destinatario, codigo_rastreio
+
 
 def alterarOriginal(filepath, destino, codRastreio):
     pasta_originais = prepararDiretorios()[2]
@@ -72,20 +108,22 @@ def alterarOriginal(filepath, destino, codRastreio):
 
 def abrirArquivos(etiqueta_path, declaracao_path):
     os.startfile(etiqueta_path)
-    os.startfile(declaracao_path)
+    if declaracao_path != False:
+        os.startfile(declaracao_path)
 
 
 def gerarTagsDC(destino, codRastreio, listaCr):
-    if contador == 0:
-        raise ValueError("Nenhum arquivo foi processado.")
 
-    if contador > 1:
-        finaisCr = "_".join(listaCr)
+    finaisCr = "_".join(listaCr)
+
+    arq_etiqueta = f"ETIQ_{destino}_{codRastreio}.pdf"
+    arq_declaracao = f"DC_{destino}_{codRastreio}.pdf"
+
+    if nova_etiqueta.page_count > 1: #Se houver mais de uma etiqueta processada
         arq_etiqueta = f"CROP_MULTIPLE_{finaisCr}.pdf"
-        arq_declaracao = f"DC_MULTIPLE_{finaisCr}.pdf"
-    else:
-        arq_etiqueta = f"ETIQ_{destino}_{codRastreio}.pdf"
-        arq_declaracao = f"DC_{destino}_{codRastreio}.pdf"
+    
+    if nova_declaracao.page_count > 1: #Se houver mais de uma declaração processada
+        arq_declaracao = f"DC_MULTIPLE_{finaisCr}.pdf" 
 
     pasta_etiquetas = prepararDiretorios()[0]
     pasta_declaracoes = prepararDiretorios()[1]
@@ -94,8 +132,12 @@ def gerarTagsDC(destino, codRastreio, listaCr):
     declaracao_path = os.path.join(pasta_declaracoes, arq_declaracao)
 
     nova_etiqueta.save(etiqueta_path)
-    nova_declaracao.save(declaracao_path)
 
+    if nova_declaracao.page_count > 0:
+        nova_declaracao.save(declaracao_path)
+    else:
+        declaracao_path = False
+        
     nova_etiqueta.close()
     nova_declaracao.close()
 
@@ -109,7 +151,6 @@ def getTimestamp():
     data.append(timestamp[4:-2]) #Mês atual
     data.append(timestamp[:-4]) #Ano atual
     data_string = "-".join(data) #Criar string "dia-mes-ano"
-    #print(data_string) ######################################################### Investigar múltiplas chamadas da função
     return data_string
 
 if __name__ == '__main__':
@@ -120,23 +161,32 @@ if __name__ == '__main__':
 
         original = mupdf.open(os.path.abspath(filepath))
         qtd_pgs = original.page_count
-        dados = getDadosDestino(original) # Pode quebrar com uma etiqueta do melhor envio ************************************
-        destino = dados[0]
-        codRastreio = dados[1]
 
-        listaCr.append(codRastreio[-6:]) # Armazena os finais dos códigos de rastreio para nomear os arquivos múltiplos
+        if qtd_pgs == 1: #Melhor envio
 
-        if qtd_pgs < 3:
-            coordenadas = coord_etiqueta_menvio # Melhorar tratamento do PDF do melhor envio. *****************************
-        else:
-            coordenadas = coord_etiqueta_meli
-        croparEtiqueta(coordenadas)
-        separarDeclaracao()
+            dados = getDadosMenvio(original)
+            
+            destino = dados[0]
+            codRastreio = dados[1]
+            listaCr.append(codRastreio[-6:]) 
+
+            croparEtiqueta(coord_etiqueta_menvio)
+
+        if qtd_pgs == 3: #Mercado Livre
+            
+            dados = getDadosMeLi(original)
+            
+            destino = dados[0]
+            codRastreio = dados[1]
+            listaCr.append(codRastreio[-6:]) # Armazena os finais dos códigos de rastreio para nomear os arquivos múltiplos
+
+            separarDeclaracao()
+            croparEtiqueta(coord_etiqueta_meli)
+
+        
+        
         original.close()
         alterarOriginal(filepath, destino, codRastreio)
-        contador += 1
 
 
     gerarTagsDC(destino, codRastreio, listaCr)
-
-    # Uma forma de diferenciar um PDF do MeLi de um do Melhor envio é a ausência de outras páginas no PDF. Pode ser utilizada como condição para uma rotina de averiguação do tipo de arquivo.
