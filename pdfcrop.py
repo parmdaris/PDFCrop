@@ -12,7 +12,7 @@ nova_declaracao = mupdf.open()
 coord_etiqueta_meli = [31.7, 28.7, 286.3, 449.3]
 coord_etiqueta_menvio = [13, 24, 284, 400]
 
-def prepararDiretorios():
+def prepararDiretorios(): #Gera os diretórios de salvamento dos arquivos e retorna os caminhos.
     data_atual = getTimestamp()
 
     home_usuario = os.path.expanduser("~")
@@ -31,7 +31,7 @@ def prepararDiretorios():
     return pasta_etiquetas, pasta_declaracoes, pasta_originais
 
 
-def calcular_margem(coord_bruta, escala):
+def calcular_margem(coord_bruta, escala): #Calcula margem para redimensionamento a ser aplicada nas etiquetas.
     
     x0, y0, x1, y1 = coord_bruta
 
@@ -49,7 +49,7 @@ def calcular_margem(coord_bruta, escala):
     return [novo_x0, novo_y0, novo_x1, novo_y1]
 
 
-def croparEtiqueta(coordenadas):
+def croparEtiqueta(coordenadas): #Faz a extração da etiqueta de dentro do PDF original.
     pag_alvo = 0
 
     pag_etiqueta = original[0]
@@ -60,7 +60,7 @@ def croparEtiqueta(coordenadas):
     linha_margem.finish(width=0.5, color=(0, 0, 0))
     linha_margem.commit()
     
-    coord_margem = calcular_margem(coordenadas, 0.95)
+    coord_margem = calcular_margem(coordenadas, 0.95) 
 
     margem = mupdf.Rect(coord_margem[0], coord_margem[1], coord_margem[2], coord_margem[3])
 
@@ -68,12 +68,12 @@ def croparEtiqueta(coordenadas):
     nova_etiqueta.insert_pdf(original, from_page=pag_alvo, to_page=pag_alvo)
 
 
-def separarDeclaracao():
+def separarDeclaracao(): #Separa a declaração de conteúdo do arquivo original.
     pag_alvo = 1
     nova_declaracao.insert_pdf(original, from_page=pag_alvo, to_page=pag_alvo)
 
 
-def getDadosMeLi(original):
+def getDadosMeLi(original): #Extrai os dados de destino de dentro da Declaração de Contrúdo do Mercado Livre.
 
     dados = original[1].get_text()
     
@@ -84,7 +84,7 @@ def getDadosMeLi(original):
     return nome_destinatario, codigo_rastreio
 
 
-def getDadosMenvio(original):
+def getDadosMenvio(original): #Extrai os dados de destino de dentro da etiqueta do Melhor Envio.
     
     dados = original[0].get_text()
     
@@ -95,7 +95,7 @@ def getDadosMenvio(original):
     return nome_destinatario, codigo_rastreio
 
 
-def alterarOriginal(filepath, destino, codRastreio):
+def alterarOriginal(filepath, destino, codRastreio): #Renomeia e move os arquivos originais.
     pasta_originais = prepararDiretorios()[2]
 
     os.rename(os.path.abspath(filepath), f"{destino}_{codRastreio}.pdf")
@@ -106,13 +106,13 @@ def alterarOriginal(filepath, destino, codRastreio):
     shutil.move(f"{destino}_{codRastreio}.pdf", pasta_originais) # Mover originais para a pasta Originais
 
 
-def abrirArquivos(etiqueta_path, declaracao_path):
+def abrirArquivos(etiqueta_path, declaracao_path): #Abre os arquivos gerados.
     os.startfile(etiqueta_path)
     if declaracao_path != False:
         os.startfile(declaracao_path)
 
 
-def gerarTagsDC(destino, codRastreio, listaCr):
+def gerarTagsDC(destino, codRastreio, listaCr): #Grava as e as Declarações e etiquetas processadas em seus arquivos.
 
     finaisCr = "_".join(listaCr)
 
@@ -144,7 +144,7 @@ def gerarTagsDC(destino, codRastreio, listaCr):
     abrirArquivos(etiqueta_path, declaracao_path)
 
 
-def getTimestamp():
+def getTimestamp(): #Cria uma string com a data atual.
     data = []
     timestamp = datetime.datetime.now().strftime("%Y%m%d")
     data.append(timestamp[6:]) #Dia atual
