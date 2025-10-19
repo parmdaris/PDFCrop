@@ -3,7 +3,8 @@ import sys
 import os
 import datetime
 import shutil
-import numpy as np
+from PIL import Image
+import pytesseract
 
 listaCr = [] # Armazena os finais dos códigos de rastreio para nomear os arquivos múltiplos
 nova_etiqueta = mupdf.open()
@@ -88,11 +89,47 @@ def getDadosMenvio(original): #Extrai os dados de destino de dentro da etiqueta 
     
     dados = original[0].get_text()
     
-    linha = dados.split("\n")
-    nome_destinatario = linha[11]
-    codigo_rastreio = linha[6]
+    if dados == "":
+        nome_destinatario = "MENVIO"
+        codigo_rastreio = "CR_MENVIO"
+    else:
+        linha = dados.split("\n")
+        nome_destinatario = linha[11]
+        codigo_rastreio = linha[6]
 
     return nome_destinatario, codigo_rastreio
+
+
+def getTipoFlex(original): #Função para analisar se o documento pertence a um envio Flex ou a um documento do Melhor envio.
+    dados = original[0].get_text()
+    linhas = dados.split("\n")
+    flex = False #Tipo padrão: Melhor envio
+
+    for i in linhas:
+        print(i)
+        if i == f"Envio Flex":
+            flex = True
+
+    if flex == True: #Se detectado um documento de envio Flex, retornar verdadeiro.
+        return True
+    
+    return False
+
+
+def getDadosFlex(original): #Extrai os dados de destino de dentro da descrição de envio Flex.
+    
+    dados = original[1].get_text()
+    
+    if dados == "":
+        nome_destinatario = "FLEX"
+        codigo_id = "COD_FLEX"
+    else:
+        linha = dados.split("\n")
+        nome_destinatario = linha[5]
+        codigo_id = linha[2]
+
+    return nome_destinatario, codigo_id
+        
 
 
 def alterarOriginal(filepath, destino, codRastreio): #Renomeia e move os arquivos originais.
@@ -153,6 +190,8 @@ def getTimestamp(): #Cria uma string com a data atual.
     data_string = "-".join(data) #Criar string "dia-mes-ano"
     return data_string
 
+
+
 if __name__ == '__main__':
 
     prepararDiretorios()
@@ -161,16 +200,6 @@ if __name__ == '__main__':
 
         original = mupdf.open(os.path.abspath(filepath))
         qtd_pgs = original.page_count
-
-        if qtd_pgs == 1: #Melhor envio
-
-            dados = getDadosMenvio(original)
-            
-            destino = dados[0]
-            codRastreio = dados[1]
-            listaCr.append(codRastreio[-6:]) 
-
-            croparEtiqueta(coord_etiqueta_menvio)
 
         if qtd_pgs == 3: #Mercado Livre
             
@@ -182,6 +211,28 @@ if __name__ == '__main__':
 
             separarDeclaracao()
             croparEtiqueta(coord_etiqueta_meli)
+
+
+        if qtd_pgs < 3: #Melhor envio ou flex
+
+            if getTipoFlex(original) == True: #Se for envio Flex:
+
+                dados = getDadosFlex(original)
+                
+                destino = dados[0]
+                codRastreio = dados[1]
+                listaCr.append(codRastreio)
+
+                croparEtiqueta(coord_etiqueta_meli) #Crop area da etiqueta de envio flex é a mesma da etiqueta normal do Mercado livre.
+            
+            else: #Se for melhor envio:
+                dados = getDadosMenvio(original)
+                
+                destino = dados[0]
+                codRastreio = dados[1]
+                listaCr.append(codRastreio[-6:]) 
+
+                croparEtiqueta(coord_etiqueta_menvio)
 
         
         
