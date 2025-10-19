@@ -106,7 +106,6 @@ def getTipoFlex(original): #Função para analisar se o documento pertence a um 
     flex = False #Tipo padrão: Melhor envio
 
     for i in linhas:
-        print(i)
         if i == f"Envio Flex":
             flex = True
 
