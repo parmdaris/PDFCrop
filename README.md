@@ -11,6 +11,7 @@ Características:
 - Arquivos originais e gerados recebem o nome do destinatário e o código de rastreio do envio para fácil identificação dos arquivos;
 - Move os arquivos originais e os arquivos gerados para a pasta "Vendas MELI" no diretório "Documentos" para uma melhor gestão dos mesmos;
 - Suporta arquivos de etiqueta do sistema Melhor Envio;
+- Suporta arquivos de etiqueta do envio tipo "Flex";
 
 Como utilizar:
 
